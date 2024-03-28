@@ -1,5 +1,6 @@
 fn main() {
-    challenge_1()
+    challenge_1();
+    challenge_2();
 }
 
 fn challenge_1() {
@@ -11,11 +12,24 @@ fn challenge_1() {
     println!("Success: {}", base64_string == expected_output)
 }
 
+fn challenge_2() {
+    let hex1 = "1c0111001f010100061a024b53535009181c";
+    let hex2 = "686974207468652062756c6c277320657965";
+    let expected_output = "746865206b696420646f6e277420706c6179";
+    let xored_bytes = xor_bytes(&hex_to_bytes(&hex1), &hex_to_bytes(&hex2));
+    println!("xor: {}", bytes_to_hex(&xored_bytes));
+    println!("Success: {}", expected_output == bytes_to_hex(&xored_bytes));
+}
+
+fn xor_bytes(b1: &[u8], b2: &[u8]) -> Vec<u8> {
+    b1.iter().zip(b2.iter()).map(|(x, y)| x ^ y).collect()
+}
+
 fn digit_to_char(d: u8) -> char {
     if 0 <= d && d < 10 {
         (('0' as u8) + d) as char
     } else {
-        (('A' as u8) + d - 10) as char
+        (('a' as u8) + d - 10) as char
     }
 }
 
