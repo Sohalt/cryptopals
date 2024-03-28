@@ -11,6 +11,25 @@ fn challenge_1() {
     println!("Success: {}", base64_string == expected_output)
 }
 
+fn digit_to_char(d: u8) -> char {
+    if 0 <= d && d < 10 {
+        (('0' as u8) + d) as char
+    } else {
+        (('A' as u8) + d - 10) as char
+    }
+}
+
+fn bytes_to_hex(bytes: &[u8]) -> String {
+    let mut s = String::new();
+    for byte in bytes.iter() {
+        let upper = digit_to_char(byte >> 4);
+        let lower = digit_to_char(byte & 0xF);
+        s.push(upper);
+        s.push(lower);
+    }
+    s
+}
+
 fn hex_to_bytes(hex_string: &str) -> Vec<u8> {
     let mut bytes = Vec::new();
     let mut buffer = 0;
