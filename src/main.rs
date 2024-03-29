@@ -1,4 +1,5 @@
 use std::collections::BinaryHeap;
+use std::fs;
 use std::iter;
 use std::str;
 
@@ -6,6 +7,7 @@ fn main() {
     challenge_1();
     challenge_2();
     challenge_3();
+    challenge_4();
 }
 
 fn challenge_1() {
@@ -13,6 +15,7 @@ fn challenge_1() {
     let expected_output = "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t";
     let bytes = hex_to_bytes(hex_string);
     let base64_string = bytes_to_base64(bytes);
+    println!("Challenge 1");
     println!("Base64: {}", base64_string);
     println!("Success: {}", base64_string == expected_output)
 }
@@ -22,6 +25,7 @@ fn challenge_2() {
     let hex2 = "686974207468652062756c6c277320657965";
     let expected_output = "746865206b696420646f6e277420706c6179";
     let xored_bytes = xor_bytes(&hex_to_bytes(&hex1), &hex_to_bytes(&hex2));
+    println!("Challenge 2");
     println!("xor: {}", bytes_to_hex(&xored_bytes));
     println!("Success: {}", expected_output == bytes_to_hex(&xored_bytes));
 }
@@ -29,7 +33,7 @@ fn challenge_2() {
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd)]
 struct Decrypted {
     score: u32,
-    key: char,
+    key: u8,
     plaintext: Box<String>,
 }
 
@@ -37,32 +41,76 @@ fn score(s: &str) -> u32 {
     s.chars().filter(|c| *c == ' ').count() as u32
 }
 
+fn decrypt_xor_single(key: u8, cyphertext: &str) -> Decrypted {
+    let input_bytes = hex_to_bytes(cyphertext);
+    let xor = repeated_xor_cipher(&[key], &input_bytes);
+    match String::from_utf8(xor) {
+        Ok(plaintext) => {
+            let score = score(&plaintext);
+            Decrypted {
+                score,
+                key,
+                plaintext: Box::new(plaintext),
+            }
+        }
+        Err(_) => Decrypted {
+            score: 0,
+            key,
+            plaintext: Box::new(String::from("")),
+        },
+    }
+}
+
+fn brute_force(cypthertext: &str) -> Decrypted {
+    let mut possibilites = BinaryHeap::new();
+    (b'A'..=b'Z')
+        .chain(b'a'..=b'z')
+        .chain(b'0'..=b'9')
+        .for_each(|key| {
+            possibilites.push(decrypt_xor_single(key, &cypthertext));
+        });
+    possibilites.pop().unwrap()
+}
+
 fn challenge_3() {
     let input = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
-    let input_bytes = hex_to_bytes(input);
+    let best_guess = brute_force(input);
+    println!("Challenge 3");
+    println!("key: {}, text: {}", best_guess.key, best_guess.plaintext);
+}
+
+fn challenge_4() {
+    let input = fs::read_to_string("4.txt").unwrap();
     let mut possibilites = BinaryHeap::new();
-    (b'A'..=b'Z').for_each(|key| {
-        let key_bytes = &iter::repeat(key)
-            .take(input_bytes.len())
-            .collect::<Vec<u8>>();
-        let plaintext = Box::new(String::from_utf8(xor_bytes(key_bytes, &input_bytes)).unwrap());
-        let score = score(&plaintext);
-        possibilites.push(Decrypted {
-            score,
-            key: key as char,
-            plaintext,
-        });
+    input.lines().for_each(|line| {
+        let d = brute_force(line);
+        println!("{}", d.plaintext);
+        possibilites.push(d);
     });
     let best_guess = possibilites.pop().unwrap();
-    println!("key: {}, text: {}", best_guess.key, best_guess.plaintext);
+    println!("Challenge 4");
+    println!(
+        "key: {}, text: {}",
+        best_guess.key as char, best_guess.plaintext
+    );
 }
 
 fn xor_bytes(b1: &[u8], b2: &[u8]) -> Vec<u8> {
     b1.iter().zip(b2.iter()).map(|(x, y)| x ^ y).collect()
 }
 
+fn repeated_xor_cipher(key: &[u8], cyphertext: &[u8]) -> Vec<u8> {
+    let mut i = 0;
+    let mut out = Vec::with_capacity(cyphertext.len());
+    while i < cyphertext.len() {
+        out.push(key[i % key.len()] ^ cyphertext[i]);
+        i = i + 1;
+    }
+    out
+}
+
 fn digit_to_char(d: u8) -> char {
-    if 0 <= d && d < 10 {
+    if d < 10 {
         (('0' as u8) + d) as char
     } else {
         (('a' as u8) + d - 10) as char
