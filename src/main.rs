@@ -1,6 +1,11 @@
+use std::collections::BinaryHeap;
+use std::iter;
+use std::str;
+
 fn main() {
     challenge_1();
     challenge_2();
+    challenge_3();
 }
 
 fn challenge_1() {
@@ -19,6 +24,37 @@ fn challenge_2() {
     let xored_bytes = xor_bytes(&hex_to_bytes(&hex1), &hex_to_bytes(&hex2));
     println!("xor: {}", bytes_to_hex(&xored_bytes));
     println!("Success: {}", expected_output == bytes_to_hex(&xored_bytes));
+}
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd)]
+struct Decrypted {
+    score: u32,
+    key: char,
+    plaintext: Box<String>,
+}
+
+fn score(s: &str) -> u32 {
+    s.chars().filter(|c| *c == ' ').count() as u32
+}
+
+fn challenge_3() {
+    let input = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
+    let input_bytes = hex_to_bytes(input);
+    let mut possibilites = BinaryHeap::new();
+    (b'A'..=b'Z').for_each(|key| {
+        let key_bytes = &iter::repeat(key)
+            .take(input_bytes.len())
+            .collect::<Vec<u8>>();
+        let plaintext = Box::new(String::from_utf8(xor_bytes(key_bytes, &input_bytes)).unwrap());
+        let score = score(&plaintext);
+        possibilites.push(Decrypted {
+            score,
+            key: key as char,
+            plaintext,
+        });
+    });
+    let best_guess = possibilites.pop().unwrap();
+    println!("key: {}, text: {}", best_guess.key, best_guess.plaintext);
 }
 
 fn xor_bytes(b1: &[u8], b2: &[u8]) -> Vec<u8> {
