@@ -15,8 +15,9 @@ fn challenge_1() {
     let hex_string = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d"; // Hexadecimal input
     let expected_output = "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t";
     let bytes = hex_to_bytes(hex_string);
-    let base64_string = bytes_to_base64(bytes);
+    let base64_string = bytes_to_base64(&bytes);
     println!("Challenge 1");
+    println!("Plaintext: {}", String::from_utf8(bytes).unwrap());
     println!("Base64: {}", base64_string);
     println!("Success: {}", base64_string == expected_output)
 }
@@ -27,6 +28,12 @@ fn challenge_2() {
     let expected_output = "746865206b696420646f6e277420706c6179";
     let xored_bytes = xor_bytes(&hex_to_bytes(&hex1), &hex_to_bytes(&hex2));
     println!("Challenge 2");
+    println!("hex1: {}", String::from_utf8(hex_to_bytes(hex1)).unwrap());
+    println!("hex2: {}", String::from_utf8(hex_to_bytes(hex2)).unwrap());
+    println!(
+        "xored: {}",
+        String::from_utf8(hex_to_bytes(expected_output)).unwrap()
+    );
     println!("xor: {}", bytes_to_hex(&xored_bytes));
     println!("Success: {}", expected_output == bytes_to_hex(&xored_bytes));
 }
@@ -85,7 +92,6 @@ fn challenge_4() {
     let mut possibilites = BinaryHeap::new();
     input.lines().for_each(|line| {
         let d = brute_force(line);
-        println!("{}", d.plaintext);
         possibilites.push(d);
     });
     let best_guess = possibilites.pop().unwrap();
@@ -105,10 +111,8 @@ fn challenge_5() {
 I go crazy when I hear a cymbal";
     let key = "ICE";
     let expected = "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f";
-    let encrypted = bytes_to_hex(&repeated_xor_cipher(
-        &string_to_bytes(key),
-        &string_to_bytes(input),
-    ));
+    let encrypted_bytes = repeated_xor_cipher(&string_to_bytes(key), &string_to_bytes(input));
+    let encrypted = bytes_to_hex(&encrypted_bytes);
     println!("Challenge 5");
     println!("Encrypted: {}", &encrypted);
     println!("Success: {}", expected == encrypted);
@@ -155,15 +159,15 @@ fn challenge_6() {
     println!("bytes {:?}", hex_to_bytes("0123456789abcdef"));
     println!(
         "base64 {:?}",
-        bytes_to_base64(hex_to_bytes("0123456789abcdef"))
+        bytes_to_base64(&hex_to_bytes("0123456789abcdef"))
     );
     println!(
         "bytes {:?}",
-        base64_to_bytes(&bytes_to_base64(hex_to_bytes("0123456789abcdef")))
+        base64_to_bytes(&bytes_to_base64(&hex_to_bytes("0123456789abcdef")))
     );
     println!(
         "Base64 {}",
-        bytes_to_hex(&base64_to_bytes(&bytes_to_base64(hex_to_bytes(
+        bytes_to_hex(&base64_to_bytes(&bytes_to_base64(&hex_to_bytes(
             "0123456789abcdef"
         ))))
     );
@@ -230,7 +234,7 @@ fn hex_to_bytes(hex_string: &str) -> Vec<u8> {
     bytes
 }
 
-fn bytes_to_base64(bytes: Vec<u8>) -> String {
+fn bytes_to_base64(bytes: &[u8]) -> String {
     let base64_chars: Vec<char> =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
             .chars()
