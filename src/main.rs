@@ -8,6 +8,7 @@ fn main() {
     challenge_3();
     challenge_4();
     challenge_5();
+    challenge_6();
 }
 
 fn challenge_1() {
@@ -113,6 +114,64 @@ I go crazy when I hear a cymbal";
     println!("Success: {}", expected == encrypted);
 }
 
+fn bits_in_byte(byte: u8) -> u8 {
+    let mut count = 0;
+    for i in 0..8 {
+        count += (byte >> i) & 1;
+    }
+    count
+}
+
+fn hamming(a: &[u8], b: &[u8]) -> u32 {
+    let mut out: u32 = 0;
+    for i in 0..a.len() {
+        out += bits_in_byte(a[i] ^ b[i]) as u32;
+    }
+    out
+}
+
+fn guess_keysize(bytes: &[u8]) -> u32 {
+    let mut lowest_hamming = u32::MAX;
+    let mut plausable_keysize = 2;
+    for keysize in 2..=40 {
+        let h = hamming(&bytes[0..keysize], &bytes[keysize..(2 * keysize)]);
+        if h < lowest_hamming {
+            lowest_hamming = h;
+            plausable_keysize = keysize as u32;
+        }
+    }
+    plausable_keysize
+}
+
+fn challenge_6() {
+    println!("Challenge 6");
+    println!(
+        "Hamming test: {}",
+        hamming(
+            &string_to_bytes("this is a test"),
+            &string_to_bytes("wokka wokka!!!")
+        )
+    );
+    println!("bytes {:?}", hex_to_bytes("0123456789abcdef"));
+    println!(
+        "base64 {:?}",
+        bytes_to_base64(hex_to_bytes("0123456789abcdef"))
+    );
+    println!(
+        "bytes {:?}",
+        base64_to_bytes(&bytes_to_base64(hex_to_bytes("0123456789abcdef")))
+    );
+    println!(
+        "Base64 {}",
+        bytes_to_hex(&base64_to_bytes(&bytes_to_base64(hex_to_bytes(
+            "0123456789abcdef"
+        ))))
+    );
+    //let input = fs::read_to_string("6.txt").expect("file 6.txt not found");
+    //let input_bytes = base64_to_bytes(&input);
+    //println!("Plausible keysize: {}", guess_keysize(&input_bytes));
+}
+
 fn xor_bytes(b1: &[u8], b2: &[u8]) -> Vec<u8> {
     b1.iter().zip(b2.iter()).map(|(x, y)| x ^ y).collect()
 }
@@ -200,9 +259,40 @@ fn bytes_to_base64(bytes: Vec<u8>) -> String {
             base64_string.pop();
             base64_string.pop();
             base64_string.push('=');
-            base64_string.push('=')
         }
         _ => {}
     }
     base64_string
+}
+
+fn char_to_value(c: char) -> u8 {
+    match c {
+        'A'..='Z' => c as u8 - 'A' as u8,
+        'a'..='z' => c as u8 - 'a' as u8 + 26,
+        '0'..='9' => c as u8 - '0' as u8 + 26 + 26,
+        '+' => 26 + 26 + 10,
+        '/' => 26 + 26 + 10 + 1,
+        _ => 0,
+    }
+}
+
+fn base64_to_bytes(s: &str) -> Vec<u8> {
+    let sbytes = s.as_bytes();
+    let mut bytes = Vec::with_capacity(s.len() / 4 * 3);
+    let mut i = 0;
+    while i < s.len() {
+        let byte1 = (char_to_value(sbytes[i] as char) << 2) as u8
+            + (char_to_value(sbytes[i + 1] as char) >> 4) as u8;
+
+        let byte2 = (char_to_value(sbytes[i + 1] as char) << 4) as u8
+            + (char_to_value(sbytes[i + 2] as char) >> 2) as u8;
+
+        let byte3 = (char_to_value(sbytes[i + 2] as char) << 6) as u8
+            + char_to_value(sbytes[i + 3] as char) as u8;
+        bytes.push(byte1);
+        bytes.push(byte2);
+        bytes.push(byte3);
+        i += 4;
+    }
+    bytes
 }
