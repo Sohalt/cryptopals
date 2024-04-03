@@ -1,6 +1,5 @@
 use std::collections::BinaryHeap;
 use std::fs;
-use std::iter;
 use std::str;
 
 fn main() {
@@ -8,6 +7,7 @@ fn main() {
     challenge_2();
     challenge_3();
     challenge_4();
+    challenge_5();
 }
 
 fn challenge_1() {
@@ -93,6 +93,24 @@ fn challenge_4() {
         "key: {}, text: {}",
         best_guess.key as char, best_guess.plaintext
     );
+}
+
+fn string_to_bytes(s: &str) -> Vec<u8> {
+    s.chars().map(|c| c as u8).collect()
+}
+
+fn challenge_5() {
+    let input = "Burning 'em, if you ain't quick and nimble
+I go crazy when I hear a cymbal";
+    let key = "ICE";
+    let expected = "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f";
+    let encrypted = bytes_to_hex(&repeated_xor_cipher(
+        &string_to_bytes(key),
+        &string_to_bytes(input),
+    ));
+    println!("Challenge 5");
+    println!("Encrypted: {}", &encrypted);
+    println!("Success: {}", expected == encrypted);
 }
 
 fn xor_bytes(b1: &[u8], b2: &[u8]) -> Vec<u8> {
